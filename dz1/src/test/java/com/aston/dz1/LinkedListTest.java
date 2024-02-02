@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// тут те же замечания по стилю
 class LinkedListTest {
 
     private static final List<Integer> list = new LinkedList<>();
