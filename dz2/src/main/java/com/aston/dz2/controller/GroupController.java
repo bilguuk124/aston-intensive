@@ -1,12 +1,10 @@
 package com.aston.dz2.controller;
 
-import com.aston.dz2.entity.Student;
-import com.aston.dz2.entity.StudentDisciplineScore;
-import com.aston.dz2.entity.dto.StudentDto;
+import com.aston.dz2.entity.Group;
+import com.aston.dz2.entity.dto.GroupDto;
 import com.aston.dz2.exception.BadRequestException;
 import com.aston.dz2.exception.UrlNotFoundException;
-import com.aston.dz2.service.DisciplineService;
-import com.aston.dz2.service.StudentService;
+import com.aston.dz2.service.GroupService;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import jakarta.inject.Inject;
@@ -22,16 +20,15 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 
-@WebServlet("/api/students/*")
-public class StudentController extends HttpServlet {
-
+@WebServlet("/api/groups/*")
+public class GroupController extends HttpServlet {
+    
     @Inject
-    private StudentService studentService;
-    @Inject
-    private DisciplineService disciplineService;
-
+    private GroupService groupService;
+    
     @Inject
     private Logger log;
+    
     @Inject
     private Gson gson;
 
@@ -39,41 +36,26 @@ public class StudentController extends HttpServlet {
         try{
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/")){
-                log.info("Got request to get all students");
-                List<Student> students = studentService.getAllStudents();
-                String jsonResponse = gson.toJson(students);
+                log.info("Got request to get all groups");
+                List<Group> groups = groupService.getAll();
+                String jsonResponse = gson.toJson(groups);
                 sendResponse(response, jsonResponse);
             }
             else{
-                log.info("Got request to get a students by id");
+                log.info("Got request to get a groups by id");
                 String[] pathParams = getPathParams(pathInfo);
-                if (pathParams == null || pathParams.length < 1) {
+                if (pathParams == null || pathParams.length != 1) {
                     if (pathParams != null){
                         log.error("Path was not found: {}, path params: {}", pathInfo, pathParams.length);
                         log.error("Path params: {}", Arrays.toString(pathParams));
                     }
                     throw new UrlNotFoundException("Not found ");
                 }
-                if (pathParams.length == 2){
-                    if (pathParams[1].equalsIgnoreCase("scores")){
-                        log.error("Not found: {}", pathInfo);
-                        throw new UrlNotFoundException("Not found: " + pathInfo);
-                    }
-                }
-
-                Long studentId = Long.parseLong(pathParams[0]);
-
-                if (pathParams.length == 1){
-                    Student student = studentService.getStudentById(studentId);
-                    String jsonResponse = gson.toJson(student);
-                    log.info("Response: {}", student);
-                    sendResponse(response, jsonResponse);
-                } else {
-                    List<StudentDisciplineScore> scores = disciplineService.getStudentScores(studentId);
-                    String jsonResponse = gson.toJson(scores);
-                    log.info("Response: {}", Arrays.toString(scores.toArray()));
-                    sendResponse(response, jsonResponse);
-                }
+                Long groupId = Long.parseLong(pathParams[0]);
+                Group group = groupService.getById(groupId);
+                String jsonResponse = gson.toJson(group);
+                log.info("Response: {}", group);
+                sendResponse(response, jsonResponse);
             }
         } catch (Exception e){
             throw new ServletException(e);
@@ -82,20 +64,33 @@ public class StudentController extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws JsonSyntaxException, ServletException {
         try{
-            log.info("Got request to create a new student");
+            log.info("Got request to create a new group");
             String pathInfo = request.getPathInfo();
             String[] pathParams = getPathParams(pathInfo);
-            if (pathParams != null) {
-                log.info("Url not found");
-                throw new UrlNotFoundException("Not found");
+            if (pathParams == null) {
+                String requestBody = request.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
+                log.info("RequestBody: {}", requestBody);
+                GroupDto dto = gson.fromJson(requestBody, GroupDto.class);
+                if (dto == null) throw new BadRequestException("Can't parse the request body to group dto");
+                log.info("Group info: {}", dto);
+                groupService.addGroup(dto);
+                sendResponse(response, gson.toJson("Created Successfully"));
+            } else if (pathParams.length == 1){
+                Long groupId = Long.parseLong(pathParams[0]);
+                log.info("Adding student to group with id: {}", groupId);
+                String studentIdStr = request.getParameter("student_id");
+                if (studentIdStr == null){
+                    throw new BadRequestException("Parameter was not found: student_id");
+                }
+                Long studentId = Long.parseLong(studentIdStr);
+                log.info("Student to add has id: {}", studentId);
+                groupService.addStudentToGroup(groupId, studentId);
+                sendResponse(response, gson.toJson("Added successfully"));
+            } else {
+                log.error("Url not found " + pathInfo);
+                throw new UrlNotFoundException("Url not found " + pathInfo);
             }
-            String requestBody = request.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-            log.info("RequestBody: {}", requestBody);
-            StudentDto dto = gson.fromJson(requestBody, StudentDto.class);
-            if (dto == null) throw new BadRequestException("Can't parse the request body to student dto");
-            log.info("Student info: {}", dto);
-            studentService.addStudent(dto);
-            sendResponse(response, gson.toJson("Created Successfully"));
+
         } catch (Exception ex){
             throw new ServletException(ex);
         }
@@ -103,7 +98,7 @@ public class StudentController extends HttpServlet {
 
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, NumberFormatException {
         try{
-            log.info("Got request to update the student");
+            log.info("Got request to update the group");
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/")){
                 log.error("Request doesn't include required path param: id");
@@ -114,10 +109,10 @@ public class StudentController extends HttpServlet {
                 log.error("Number of path params: {}, required: 1", pathParams.length);
                 throw new UrlNotFoundException("Request includes more or less than required param");
             }
-            Long studentId = Long.parseLong(pathParams[0]);
+            Long groupId = Long.parseLong(pathParams[0]);
             String requestBody = request.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-            StudentDto dto = gson.fromJson(requestBody, StudentDto.class);
-            studentService.updateStudent(studentId, dto);
+            GroupDto dto = gson.fromJson(requestBody, GroupDto.class);
+            groupService.updateGroup(groupId, dto);
             sendResponse(response, gson.toJson("Updated successfully"));
         } catch (Exception e){
             throw new ServletException(e);
@@ -126,14 +121,14 @@ public class StudentController extends HttpServlet {
 
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException {
         try{
-            log.info("Got request to delete student by id");
+            log.info("Got request to delete group by id");
             String pathInfo = request.getPathInfo();
             String[] pathParams = getPathParams(pathInfo);
             if (pathParams.length != 1) {
                 throw new UrlNotFoundException("Not found");
             }
-            Long studentId = Long.valueOf(pathParams[0]);
-            studentService.deleteStudent(studentId);
+            Long groupId = Long.parseLong(pathParams[0]);
+            groupService.deleteGroup(groupId);
             sendResponse(response, gson.toJson("Successfully deleted"));
         } catch (Exception e){
             throw new ServletException(e);
@@ -153,5 +148,4 @@ public class StudentController extends HttpServlet {
         String path = pathInfo.substring(1);
         return path.split("/");
     }
-
 }

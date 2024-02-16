@@ -1,42 +1,22 @@
 package com.aston.dz2.service;
 
 import com.aston.dz2.entity.Student;
-import com.aston.dz2.entity.StudentDTO;
-
+import com.aston.dz2.entity.dto.StudentDto;
 import java.util.List;
 
 public interface StudentService {
 
-    /**
-     * Create a new student
-     * @param dto - student's info
-     */
-    void addStudent(StudentDTO dto);
+    void addStudent(StudentDto dto) throws Exception;
 
-    /**
-     * Update the existing student
-     * @param id of the student
-     * @param dto new info of student
-     */
-    void updateStudent(Long id, StudentDTO dto);
+    void updateStudent(Long id, StudentDto dto) throws Exception;
 
-    /**
-     * Delete an existing student
-     * @param id of the student
-     * @return if operation was successful
-     */
-    boolean deleteStudent(Long id);
+    void updateStudent(Student student) throws Exception;
 
-    /**
-     * Get all students
-     * @return all students
-     */
-    List<Student> getAllStudent();
+    void deleteStudent(Long id) throws Exception;
 
-    /**
-     * Get a student by id
-     * @param id of the student
-     * @return found student
-     */
-    Student getStudentById(Long id);
+    List<Student> getAllStudents() throws Exception;
+
+    Student getStudentById(Long id) throws Exception;
+
+    boolean existsById(Long id) throws Exception;
 }
