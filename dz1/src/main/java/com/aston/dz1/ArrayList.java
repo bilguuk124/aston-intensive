@@ -2,15 +2,18 @@ package com.aston.dz1;
 
 
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 
 
 public class ArrayList<T> implements List<T>{
+    public static final String INDEX_OUT_OF_BOUND_ERR_MSG = "Index %d is out of bounds for array list with size = %d";
     private T[] elements;
     private int capacity;
     private int size;
-    private final static int DEFAULT_SIZE = 10;
+    private static final int DEFAULT_SIZE = 10;
 
 
     public ArrayList(){
@@ -24,8 +27,8 @@ public class ArrayList<T> implements List<T>{
         this.capacity = capacity;
         size = 0;
     }
-    public ArrayList(T[] array){
-        elements = Arrays.copyOf(array, array.length * 2);
+    public ArrayList(T[] array){ // тут если передать пустой массив, то твой лист тоже будет иметь capacity = 0
+        elements = Arrays.copyOf(array, array.length == 0 ? DEFAULT_SIZE : array.length * 2);
         capacity = array.length * 2;
         size = array.length;
     }
@@ -39,7 +42,9 @@ public class ArrayList<T> implements List<T>{
 
     @Override
     public void add(T element) {
-        if (isFull()) expandArray();
+        if (isFull()) {
+            expandArray(); // всегда используй {} - это улучшает читаемость
+        }
         elements[size++] = element;
     }
 
@@ -80,7 +85,9 @@ public class ArrayList<T> implements List<T>{
 
     @Override
     public T get(int index) {
-        if (index < 0 || index >= size) throw new IndexOutOfBoundsException("Index " + index + " is out of bounds for array list with size = " + size );
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException(String.format(INDEX_OUT_OF_BOUND_ERR_MSG, index, size ));
+        }
         return elements[index];
     }
 
@@ -93,12 +100,12 @@ public class ArrayList<T> implements List<T>{
                return;
             }
         }
-        throw new ElementNotFoundException("Element " + element + " is not present in this list");
+        throw new ElementNotFoundException("Element " + element + " is not present in this list"); // тут нужно так же форматировать как с INDEX_OUT_OF_BOUND_ERR_MSG
     }
 
     @Override
     public List<T> subList(int startIndex, int endIndex) {
-        if (endIndex < startIndex) throw new IllegalArgumentException("End index must be greater than start index");
+        if (endIndex < startIndex) throw new IllegalArgumentException("End index must be greater than start index"); //и тут
         ArrayList<T> subList = new ArrayList<>();
         for (int i = startIndex; i < endIndex; i++){
             subList.add(get(i));
@@ -151,16 +158,8 @@ public class ArrayList<T> implements List<T>{
 
     @Override
     public String toString(){
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("[");
-        if (size > 0){
-            for (int i = 0; i < size-1; i++)
-            {
-                stringBuilder.append(elements[i].toString()).append(", ");
-            }
-            stringBuilder.append(elements[size-1]);
-        }
-        stringBuilder.append("]");
-        return stringBuilder.toString();
+        return Arrays.stream(elements)
+                .map(Objects::toString)
+                .collect(Collectors.joining(", ", "[",  "]")); // можно так, так короче
     }
 }

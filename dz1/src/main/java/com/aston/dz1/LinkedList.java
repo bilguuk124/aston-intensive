@@ -1,6 +1,7 @@
 package com.aston.dz1;
 
 @SuppressWarnings("unchecked")
+// тут реализация хорошая, но ошибки по стилю такие же как в ArrayList, поэтому смотри туда)
 public class LinkedList<T> implements List<T>{
     private Node<T> head;
     private int size;

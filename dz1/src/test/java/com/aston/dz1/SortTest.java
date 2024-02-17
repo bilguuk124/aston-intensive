@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SortTest {
+class SortTest {
 
     List<Integer> linkedList = new LinkedList<>();
     List<Integer> arrayList = new LinkedList<>();
